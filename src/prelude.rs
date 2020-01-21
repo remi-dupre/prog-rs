@@ -1,1 +1,1 @@
-pub use crate::iter_progress::{AsProgressIterator, AsSizedProgressIterator};
+pub use crate::iter_progress::AsProgressIterator;
