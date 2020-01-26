@@ -1,7 +1,14 @@
 [package]
 name = "prog_rs"
+description = "Convenient progress bar"
 version = "0.1.0"
 authors = ["Rémi Dupré <remim.dupre@gmail.com>"]
+repository = "https://github.com/remi-dupre/prog-rs"
+licence = "Apache-2.0"
+license-file = "LICENSE"
+readme = "README.md"
+keywords = ["iterator", "debug", "ui", "terminal", "progress"]
+categories = ["development-tools::debugging", "rust-patterns"]
 edition = "2018"
 
 [dependencies]
