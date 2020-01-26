@@ -106,8 +106,11 @@ impl<'a> Progress {
         self
     }
 
-    pub fn with_extra_infos(mut self, extra_infos: String) -> Self {
-        self.config.extra_infos = extra_infos;
+    pub fn with_extra_infos<S>(mut self, extra_infos: S) -> Self
+    where
+        S: Into<String>,
+    {
+        self.config.extra_infos = extra_infos.into();
         self
     }
 
@@ -116,8 +119,11 @@ impl<'a> Progress {
         self
     }
 
-    pub fn with_prefix(mut self, prefix: String) -> Self {
-        self.config.prefix = prefix;
+    pub fn with_prefix<S>(mut self, prefix: S) -> Self
+    where
+        S: Into<String>,
+    {
+        self.config.prefix = prefix.into();
         self
     }
 

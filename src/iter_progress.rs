@@ -49,7 +49,10 @@ where
         self
     }
 
-    pub fn with_extra_infos(mut self, extra_infos: String) -> Self {
+    pub fn with_extra_infos<S>(mut self, extra_infos: S) -> Self
+    where
+        S: Into<String>,
+    {
         self.progress = self.progress.with_extra_infos(extra_infos);
         self
     }
@@ -59,7 +62,10 @@ where
         self
     }
 
-    pub fn with_prefix(mut self, prefix: String) -> Self {
+    pub fn with_prefix<S>(mut self, prefix: S) -> Self
+    where
+        S: Into<String>,
+    {
         self.progress = self.progress.with_prefix(prefix);
         self
     }
