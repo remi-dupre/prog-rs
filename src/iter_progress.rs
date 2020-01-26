@@ -3,6 +3,7 @@ use std::time::{Duration, Instant};
 use crate::progress::{BarPosition, OutputStream, Progress};
 use crate::utils::convert_to_unit;
 
+#[derive(Clone, Debug)]
 pub struct IterProgress<I, E>
 where
     I: Iterator<Item = E>,

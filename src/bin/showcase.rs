@@ -10,6 +10,7 @@ fn main() {
     for _ in (0..100_000_000)
         .progress()
         .with_prefix("  Starting ...".to_string())
+        .with_bar_position(BarPosition::Right)
     {}
 
     for _ in (0..100_000_000)
@@ -22,6 +23,7 @@ fn main() {
     for _ in (0..100_000_000)
         .progress()
         .with_prefix("      Ends ...".to_string())
+        .with_bar_position(BarPosition::Right)
     {}
 
     let mut progress = Progress::new()

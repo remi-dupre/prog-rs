@@ -71,6 +71,7 @@ impl Default for ProgressConfig {
 // |_|   |_|  \___/ \__, |_|  \___||___/___/
 //                  |___/
 
+#[derive(Clone, Debug)]
 pub struct Progress {
     config:           ProgressConfig,
     last_update_time: Option<Instant>,
