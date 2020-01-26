@@ -1,3 +1,5 @@
+//! Defines a basic progress bar that needs to be manually updated.
+
 use std::boxed::Box;
 use std::cmp::min;
 use std::io;
@@ -11,15 +13,24 @@ use std::time::{Duration, Instant};
 //  \____\___/|_| |_|_| |_|\__, |
 //                         |___/
 
+/// Different display modes for the progress.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BarPosition {
+    /// The progress bar will be floating right, with extra informations on
+    /// left of it.
     Right,
+
+    /// The progress bar will be displayed on left, just after the prefix.
     Left,
 }
 
+/// Available streams to display in.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum OutputStream {
+    /// Standart output.
     StdOut,
+
+    /// Standart Error.
     StdErr,
 }
 
@@ -34,7 +45,7 @@ impl OutputStream {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct ProgressConfig {
+struct ProgressConfig {
     bar_position:  BarPosition,
     bar_width:     usize,
     display_width: Option<usize>,
@@ -71,6 +82,26 @@ impl Default for ProgressConfig {
 // |_|   |_|  \___/ \__, |_|  \___||___/___/
 //                  |___/
 
+/// A generic progress bar that needs to be manually updated.
+///
+/// # Example
+///
+/// ```
+/// let mut progress = Progress::new()
+///     .with_bar_width(30)
+///     .with_extra_infos("Hello, World!")
+///     .with_refresh_delay(Duration::from_millis(100))
+///     .with_output_stream(OutputStream::StdErr);
+///
+/// for i in 0..10_000 {
+///     progress.update(i as f32 / 10_000.).unwrap();
+///     progress = progress
+///         .with_extra_infos(format!("Hello, World! ({}/10000)", i + 1));
+///     sleep(Duration::from_nanos(110));
+/// }
+///
+/// progress.finished().ok();
+/// ```
 #[derive(Clone, Debug)]
 pub struct Progress {
     config:           ProgressConfig,
@@ -87,25 +118,31 @@ impl<'a> Default for Progress {
 }
 
 impl<'a> Progress {
+    /// Create a new progress bar with default display settings.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Change the style of the bar disposition.
     pub fn with_bar_position(mut self, bar_position: BarPosition) -> Self {
         self.config.bar_position = bar_position;
         self
     }
 
+    /// Change the width of the progress bar.
     pub fn with_bar_width(mut self, bar_width: usize) -> Self {
         self.config.bar_width = bar_width;
         self
     }
 
+    /// Change the width of the text the displayed informations should try to
+    /// fit in. The terminal width will be detected by default.
     pub fn with_display_width(mut self, display_width: usize) -> Self {
         self.config.display_width = Some(display_width);
         self
     }
 
+    /// Specify extra informations to display.
     pub fn with_extra_infos<S>(mut self, extra_infos: S) -> Self
     where
         S: Into<String>,
@@ -114,11 +151,29 @@ impl<'a> Progress {
         self
     }
 
+    /// Change the output stream the progress bar is displayed in. By default
+    /// standart output is used.
     pub fn with_output_stream(mut self, output_stream: OutputStream) -> Self {
         self.config.output_stream = output_stream;
         self
     }
 
+    /// Change the text displayed in front of progress informations.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use prog_rs::prelude::*;
+    /// use prog_rs::Progress;
+    ///
+    /// let progress = Progress::new().with_prefix("Computing something ...");
+    ///
+    /// for i in (0..1000) {
+    ///     progress.update(i as f32 / 1000.)?;
+    ///     do_something(i);
+    /// }
+    ///
+    /// progress.finish()?;
     pub fn with_prefix<S>(mut self, prefix: S) -> Self
     where
         S: Into<String>,
@@ -127,35 +182,43 @@ impl<'a> Progress {
         self
     }
 
+    /// Change the minimum delay between two display updates.
     pub fn with_refresh_delay(mut self, refresh_delay: Duration) -> Self {
         self.config.refresh_delay = refresh_delay;
         self
     }
 
+    /// Change the character used to draw the body of the progress bar.
     pub fn with_shape_body(mut self, shape_body: char) -> Self {
         self.config.shape_body = shape_body;
         self
     }
 
+    /// Change the character used to draw the head of the progress bar.
     pub fn with_shape_head(mut self, shape_head: char) -> Self {
         self.config.shape_head = shape_head;
         self
     }
 
+    /// Change the character used to draw the background of the progress bar.
     pub fn with_shape_void(mut self, shape_void: char) -> Self {
         self.config.shape_void = shape_void;
         self
     }
 
-    pub fn set_extra_infos(&mut self, extra_infos: String) {
-        self.config.extra_infos = extra_infos
+    /// Update extra informations displayed next to the progress bar.
+    pub fn set_extra_infos<S>(&mut self, extra_infos: S)
+    where
+        S: Into<String>,
+    {
+        self.config.extra_infos = extra_infos.into()
     }
 
+    /// Check if the timer specified by `with_refresh_delay` has decayed.
     pub fn need_refresh(&self) -> bool {
         if let Some(last_update_time) = self.last_update_time {
             return last_update_time.elapsed() >= self.config.refresh_delay;
         }
-
         true
     }
 
@@ -175,6 +238,7 @@ impl<'a> Progress {
         (body_length, void_length, head_length)
     }
 
+    /// Redraw the progress bar if the timer has decayed.
     pub fn update(&mut self, progress: f32) -> io::Result<()> {
         if !self.need_refresh() {
             return Ok(());
@@ -242,6 +306,7 @@ impl<'a> Progress {
         stream.flush()
     }
 
+    /// Redraw the progress bar for the last time.
     pub fn finished(&mut self) -> io::Result<()> {
         self.last_update_time = None;
         self.update(1.0)?;

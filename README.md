@@ -8,7 +8,8 @@ A Rust library to help easily build a progress bar.
 ![animated screenshot](.illustration.gif)
 
 
-## Usage
+Usage
+-----
 
 First, add the following to your `Cargo.toml`:
 
@@ -46,6 +47,7 @@ fn main() {
         .progress()
         .with_prefix("Processing...")
         .with_output_stream(prog_rs::OutputStream::StdErr)
+        .with_bar_position(prog_rs::BarPosition::Right)
     {
         do_something();
     }
