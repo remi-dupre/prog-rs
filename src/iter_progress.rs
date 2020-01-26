@@ -1,21 +1,20 @@
-use std::io::Write;
 use std::time::{Duration, Instant};
 
-use crate::progress::Progress;
+use crate::progress::{BarPosition, OutputStream, Progress};
 use crate::utils::convert_to_unit;
 
-pub struct IterProgress<'a, I, E>
+pub struct IterProgress<I, E>
 where
     I: Iterator<Item = E>,
 {
-    inner: I,
+    inner:      I,
     iter_count: usize,
-    iter_size: Option<usize>,
-    progress: Progress<'a>,
+    iter_size:  Option<usize>,
+    progress:   Progress,
     time_start: Instant,
 }
 
-impl<'a, I, E> IterProgress<'a, I, E>
+impl<'a, I, E> IterProgress<I, E>
 where
     I: Iterator<Item = E>,
 {
@@ -29,18 +28,23 @@ where
         }
     }
 
-    pub fn with_progress(mut self, progress: Progress<'a>) -> Self {
+    pub fn with_progress(mut self, progress: Progress) -> Self {
         self.progress = progress;
         self
     }
 
-    pub fn with_iter_size(mut self, iter_size: usize) -> Self {
-        self.iter_size = Some(iter_size);
+    pub fn with_bar_position(mut self, bar_position: BarPosition) -> Self {
+        self.progress = self.progress.with_bar_position(bar_position);
         self
     }
 
-    pub fn with_bar_width(mut self, bar_width: u16) -> Self {
+    pub fn with_bar_width(mut self, bar_width: usize) -> Self {
         self.progress = self.progress.with_bar_width(bar_width);
+        self
+    }
+
+    pub fn with_display_width(mut self, display_width: usize) -> Self {
+        self.progress = self.progress.with_display_width(display_width);
         self
     }
 
@@ -49,7 +53,7 @@ where
         self
     }
 
-    pub fn with_output_stream(mut self, output_stream: impl Write + 'a) -> Self {
+    pub fn with_output_stream(mut self, output_stream: OutputStream) -> Self {
         self.progress = self.progress.with_output_stream(output_stream);
         self
     }
@@ -84,7 +88,7 @@ where
     }
 }
 
-impl<'a, I, E> Iterator for IterProgress<'a, I, E>
+impl<'a, I, E> Iterator for IterProgress<I, E>
 where
     I: Iterator<Item = E>,
 {
@@ -93,13 +97,16 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         let ret = self.inner.next();
         let iter_size = self.iter_size.unwrap_or_else(|| {
-            self.iter_count + self.inner.size_hint().0 + usize::from(ret.is_some())
+            self.iter_count
+                + self.inner.size_hint().0
+                + usize::from(ret.is_some())
         });
 
         if self.progress.need_refresh() || ret.is_none() {
             let remaining = match ret {
                 Some(_) => Duration::from_secs_f32(
-                    (iter_size - self.iter_count) as f32 / (1. + self.iter_count as f32)
+                    (iter_size - self.iter_count) as f32
+                        / (1. + self.iter_count as f32)
                         * self.time_start.elapsed().as_secs_f32(),
                 ),
                 None => self.time_start.elapsed(),
@@ -117,6 +124,7 @@ where
                     .update(self.iter_count as f32 / iter_size as f32),
                 None => self.progress.finished(),
             }
+            .ok();
         }
 
         self.iter_count += 1;
@@ -131,18 +139,18 @@ where
 // |_|  |_|  \___/|_| |_| |_|   |_||_|  \__,_|_|\__|
 //
 
-pub trait AsProgressIterator<'a, I, E>
+pub trait AsProgressIterator<I, E>
 where
     I: Iterator<Item = E>,
 {
-    fn progress(self) -> IterProgress<'a, I, E>;
+    fn progress(self) -> IterProgress<I, E>;
 }
 
-impl<'a, I, E> AsProgressIterator<'a, I, E> for I
+impl<I, E> AsProgressIterator<I, E> for I
 where
     I: Iterator<Item = E>,
 {
-    fn progress(self) -> IterProgress<'a, I, E> {
+    fn progress(self) -> IterProgress<I, E> {
         IterProgress::new(self)
     }
 }

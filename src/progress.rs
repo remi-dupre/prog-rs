@@ -1,7 +1,7 @@
 use std::boxed::Box;
 use std::cmp::min;
+use std::io;
 use std::io::prelude::*;
-use std::io::stdout;
 use std::time::{Duration, Instant};
 
 //   ____             __ _
@@ -11,10 +11,35 @@ use std::time::{Duration, Instant};
 //  \____\___/|_| |_|_| |_|\__, |
 //                         |___/
 
-pub struct ProgressConfig<'a> {
-    bar_width:     u16,
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum BarPosition {
+    Right,
+    Left,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum OutputStream {
+    StdOut,
+    StdErr,
+}
+
+impl OutputStream {
+    fn get(self) -> Box<dyn Write> {
+        use OutputStream::*;
+        match self {
+            StdOut => Box::new(io::stdout()),
+            StdErr => Box::new(io::stderr()),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ProgressConfig {
+    bar_position:  BarPosition,
+    bar_width:     usize,
+    display_width: Option<usize>,
     extra_infos:   String,
-    output_stream: Box<dyn Write + 'a>,
+    output_stream: OutputStream,
     prefix:        String,
     refresh_delay: Duration,
     shape_body:    char,
@@ -22,12 +47,14 @@ pub struct ProgressConfig<'a> {
     shape_void:    char,
 }
 
-impl<'a> Default for ProgressConfig<'a> {
+impl Default for ProgressConfig {
     fn default() -> Self {
         Self {
-            bar_width:     30,
+            bar_position:  BarPosition::Left,
+            bar_width:     40,
+            display_width: None,
             extra_infos:   String::new(),
-            output_stream: Box::new(stdout()),
+            output_stream: OutputStream::StdOut,
             prefix:        String::new(),
             refresh_delay: Duration::from_millis(200),
             shape_body:    '=',
@@ -44,12 +71,12 @@ impl<'a> Default for ProgressConfig<'a> {
 // |_|   |_|  \___/ \__, |_|  \___||___/___/
 //                  |___/
 
-pub struct Progress<'a> {
-    config:           ProgressConfig<'a>,
+pub struct Progress {
+    config:           ProgressConfig,
     last_update_time: Option<Instant>,
 }
 
-impl<'a> Default for Progress<'a> {
+impl<'a> Default for Progress {
     fn default() -> Self {
         Self {
             config:           ProgressConfig::default(),
@@ -58,13 +85,23 @@ impl<'a> Default for Progress<'a> {
     }
 }
 
-impl<'a> Progress<'a> {
+impl<'a> Progress {
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub fn with_bar_width(mut self, bar_width: u16) -> Self {
+    pub fn with_bar_position(mut self, bar_position: BarPosition) -> Self {
+        self.config.bar_position = bar_position;
+        self
+    }
+
+    pub fn with_bar_width(mut self, bar_width: usize) -> Self {
         self.config.bar_width = bar_width;
+        self
+    }
+
+    pub fn with_display_width(mut self, display_width: usize) -> Self {
+        self.config.display_width = Some(display_width);
         self
     }
 
@@ -73,11 +110,8 @@ impl<'a> Progress<'a> {
         self
     }
 
-    pub fn with_output_stream(
-        mut self,
-        output_stream: impl Write + 'a,
-    ) -> Self {
-        self.config.output_stream = Box::new(output_stream);
+    pub fn with_output_stream(mut self, output_stream: OutputStream) -> Self {
+        self.config.output_stream = output_stream;
         self
     }
 
@@ -120,11 +154,10 @@ impl<'a> Progress<'a> {
 
     fn bar_shape(&self, progress: f32) -> (usize, usize, usize) {
         let body_length = min(
-            usize::from(self.config.bar_width) + 1,
+            self.config.bar_width + 1,
             (progress * (self.config.bar_width + 1) as f32).round() as usize,
         );
-        let mut void_length =
-            usize::from(self.config.bar_width) + 1 - body_length;
+        let mut void_length = self.config.bar_width - body_length + 1;
         let mut head_length = 0;
 
         if void_length > 0 {
@@ -135,9 +168,9 @@ impl<'a> Progress<'a> {
         (body_length, void_length, head_length)
     }
 
-    pub fn update(&mut self, progress: f32) {
+    pub fn update(&mut self, progress: f32) -> io::Result<()> {
         if !self.need_refresh() {
-            return;
+            return Ok(());
         }
 
         self.last_update_time = Some(Instant::now());
@@ -147,23 +180,64 @@ impl<'a> Progress<'a> {
         let head = self.config.shape_head.to_string().repeat(head);
         let void = self.config.shape_void.to_string().repeat(void);
 
-        write!(
-            &mut self.config.output_stream,
-            "\r{} {:>5.1}% [{}{}{}] {}",
-            self.config.prefix,
-            100. * progress,
-            body,
-            head,
-            void,
-            self.config.extra_infos
-        )
-        .unwrap();
-        stdout().flush().unwrap();
+        // Compute display shape
+        let required_width = self.config.bar_width
+            + self.config.prefix.len()
+            + self.config.extra_infos.len()
+            + 13;
+        let display_width = self.config.display_width.unwrap_or_else(|| {
+            term_size::dimensions_stdout().map(|(w, _)| w).unwrap_or(80)
+        });
+
+        let (prefix, padding) = {
+            if display_width >= required_width {
+                (
+                    &self.config.prefix[..],
+                    " ".repeat(display_width - required_width),
+                )
+            } else if self.config.prefix.len()
+                >= required_width - display_width
+            {
+                let prefix_len = self.config.prefix.len()
+                    - (required_width - display_width);
+                (&self.config.prefix[0..prefix_len], String::new())
+            } else {
+                ("", String::new())
+            }
+        };
+
+        let text = match self.config.bar_position {
+            BarPosition::Left => format!(
+                "\r{} {:>5.1}% [{}{}{}] {}{}",
+                prefix,
+                100. * progress,
+                body,
+                head,
+                void,
+                self.config.extra_infos,
+                padding
+            ),
+            BarPosition::Right => format!(
+                "\r{} {}{} [{}{}{}] {:>5.1}%",
+                prefix,
+                padding,
+                self.config.extra_infos,
+                body,
+                head,
+                void,
+                100. * progress
+            ),
+        };
+
+        // Display text
+        let mut stream = self.config.output_stream.get();
+        stream.write_all(&text.as_bytes())?;
+        stream.flush()
     }
 
-    pub fn finished(&mut self) {
+    pub fn finished(&mut self) -> io::Result<()> {
         self.last_update_time = None;
-        self.update(1.0);
-        writeln!(&mut self.config.output_stream).unwrap();
+        self.update(1.0)?;
+        writeln!(&mut self.config.output_stream.get())
     }
 }
