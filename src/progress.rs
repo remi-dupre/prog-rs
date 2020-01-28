@@ -46,31 +46,31 @@ impl OutputStream {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct ProgressConfig {
-    bar_position:  BarPosition,
-    bar_width:     usize,
+    bar_position: BarPosition,
+    bar_width: usize,
     display_width: Option<usize>,
-    extra_infos:   String,
+    extra_infos: String,
     output_stream: OutputStream,
-    prefix:        String,
+    prefix: String,
     refresh_delay: Duration,
-    shape_body:    char,
-    shape_head:    char,
-    shape_void:    char,
+    shape_body: char,
+    shape_head: char,
+    shape_void: char,
 }
 
 impl Default for ProgressConfig {
     fn default() -> Self {
         Self {
-            bar_position:  BarPosition::Left,
-            bar_width:     40,
+            bar_position: BarPosition::Left,
+            bar_width: 40,
             display_width: None,
-            extra_infos:   String::new(),
+            extra_infos: String::new(),
             output_stream: OutputStream::StdOut,
-            prefix:        String::new(),
+            prefix: String::new(),
             refresh_delay: Duration::from_millis(200),
-            shape_body:    '=',
-            shape_head:    '>',
-            shape_void:    ' ',
+            shape_body: '=',
+            shape_head: '>',
+            shape_void: ' ',
         }
     }
 }
@@ -104,14 +104,14 @@ impl Default for ProgressConfig {
 /// ```
 #[derive(Clone, Debug)]
 pub struct Progress {
-    config:           ProgressConfig,
+    config: ProgressConfig,
     last_update_time: Option<Instant>,
 }
 
 impl<'a> Default for Progress {
     fn default() -> Self {
         Self {
-            config:           ProgressConfig::default(),
+            config: ProgressConfig::default(),
             last_update_time: None,
         }
     }
@@ -227,7 +227,7 @@ impl<'a> Progress {
             self.config.bar_width + 1,
             (progress * (self.config.bar_width + 1) as f32).round() as usize,
         );
-        let mut void_length = self.config.bar_width - body_length + 1;
+        let mut void_length = (self.config.bar_width + 1) - body_length;
         let mut head_length = 0;
 
         if void_length > 0 {
@@ -252,13 +252,12 @@ impl<'a> Progress {
         let void = self.config.shape_void.to_string().repeat(void);
 
         // Compute display shape
-        let required_width = self.config.bar_width
-            + self.config.prefix.len()
-            + self.config.extra_infos.len()
-            + 13;
-        let display_width = self.config.display_width.unwrap_or_else(|| {
-            term_size::dimensions_stdout().map(|(w, _)| w).unwrap_or(80)
-        });
+        let required_width =
+            self.config.bar_width + self.config.prefix.len() + self.config.extra_infos.len() + 13;
+        let display_width = self
+            .config
+            .display_width
+            .unwrap_or_else(|| term_size::dimensions_stdout().map(|(w, _)| w).unwrap_or(80));
 
         let (prefix, padding) = {
             if display_width >= required_width {
@@ -266,11 +265,8 @@ impl<'a> Progress {
                     &self.config.prefix[..],
                     " ".repeat(display_width - required_width),
                 )
-            } else if self.config.prefix.len()
-                >= required_width - display_width
-            {
-                let prefix_len = self.config.prefix.len()
-                    - (required_width - display_width);
+            } else if self.config.prefix.len() >= required_width - display_width {
+                let prefix_len = self.config.prefix.len() - (required_width - display_width);
                 (&self.config.prefix[0..prefix_len], String::new())
             } else {
                 ("", String::new())
