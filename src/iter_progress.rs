@@ -5,18 +5,19 @@
 //! ```
 //! use prog_rs::prelude::*;
 //!
-//! fn main() {
-//!     for _ in (0..1_000)
-//!         .progress()
-//!         .with_prefix("Processing...")
-//!         .with_output_stream(prog_rs::OutputStream::StdErr)
-//!         .with_bar_position(prog_rs::BarPosition::Right)
-//!     {
-//!         do_something();
-//!     }
+//! for _ in (0..1_000)
+//!     .progress()
+//!     .with_prefix("Processing...")
+//!     .with_output_stream(prog_rs::OutputStream::StdErr)
+//!     .with_bar_position(prog_rs::BarPosition::Right)
+//! {
+//!     do_something();
 //! }
 //! ```
 
+const HISTORY_DURATION: u64 = 10_000; // in milliseconds
+
+use std::collections::VecDeque;
 use std::time::{Duration, Instant};
 
 use crate::progress::{BarPosition, OutputStream, Progress};
@@ -28,11 +29,12 @@ pub struct IterProgress<I, E>
 where
     I: Iterator<Item = E>,
 {
-    inner:      I,
+    inner: I,
     iter_count: usize,
-    iter_size:  Option<usize>,
-    progress:   Progress,
+    iter_size: Option<usize>,
+    progress: Progress,
     time_start: Instant,
+    time_history: VecDeque<(Instant, usize)>,
 }
 
 impl<'a, I, E> IterProgress<I, E>
@@ -46,6 +48,7 @@ where
             iter_size: None,
             progress: Progress::default(),
             time_start: Instant::now(),
+            time_history: vec![(Instant::now(), 0)].into(),
         }
     }
 
@@ -174,8 +177,15 @@ where
         self
     }
 
-    /// Compute the average speed of iterations.
+    /// Compute the current average speed of iterations.
     pub fn speed(&self) -> f32 {
+        let (old_time, old_iter) = *self.time_history.front().unwrap();
+        let (cur_time, cur_iter) = (Instant::now(), self.iter_count);
+        (cur_iter - old_iter) as f32 / (cur_time - old_time).as_secs_f32()
+    }
+
+    /// Compute the total average speed of iterations.
+    pub fn total_speed(&self) -> f32 {
         self.iter_count as f32 / self.time_start.elapsed().as_secs_f32()
     }
 }
@@ -188,17 +198,18 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         let ret = self.inner.next();
-        let iter_size = self.iter_size.unwrap_or_else(|| {
-            self.iter_count
-                + self.inner.size_hint().0
-                + usize::from(ret.is_some())
-        });
 
         if self.progress.need_refresh() || ret.is_none() {
+            self.time_history
+                .push_back((Instant::now(), self.iter_count + 1));
+
+            let iter_size = self.iter_size.unwrap_or_else(|| {
+                self.iter_count + self.inner.size_hint().0 + usize::from(ret.is_some())
+            });
+
             let remaining = match ret {
                 Some(_) => Duration::from_secs_f32(
-                    (iter_size - self.iter_count) as f32
-                        / (1. + self.iter_count as f32)
+                    (iter_size - self.iter_count) as f32 / (1. + self.iter_count as f32)
                         * self.time_start.elapsed().as_secs_f32(),
                 ),
                 None => self.time_start.elapsed(),
@@ -217,6 +228,13 @@ where
                 None => self.progress.finished(),
             }
             .ok();
+
+            // Trim history to get a window of size ~10s
+            while self.time_history.back().unwrap().0 - self.time_history.front().unwrap().0
+                > Duration::from_millis(HISTORY_DURATION)
+            {
+                self.time_history.pop_front();
+            }
         }
 
         self.iter_count += 1;

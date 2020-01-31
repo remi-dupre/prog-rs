@@ -13,10 +13,8 @@
 //! ```
 //! use prog_rs::prelude::*;
 //!
-//! fn main() {
-//!     for _ in (0..1_000).progress() {
-//!         std::thread::sleep(std::time::Duration::from_millis(5));
-//!     }
+//! for _ in (0..1_000).progress() {
+//!     std::thread::sleep(std::time::Duration::from_millis(5));
 //! }
 //! ```
 //!
@@ -25,15 +23,13 @@
 //! ```
 //! use prog_rs::prelude::*;
 //!
-//! fn main() {
-//!     for _ in (0..1_000)
-//!         .progress()
-//!         .with_prefix("Processing...")
-//!         .with_output_stream(prog_rs::OutputStream::StdErr)
-//!         .with_bar_position(prog_rs::BarPosition::Right)
-//!     {
-//!         do_something();
-//!     }
+//! for _ in (0..1_000)
+//!     .progress()
+//!     .with_prefix("Processing...")
+//!     .with_output_stream(prog_rs::OutputStream::StdErr)
+//!     .with_bar_position(prog_rs::BarPosition::Right)
+//! {
+//!     do_something();
 //! }
 //! ```
 //!
