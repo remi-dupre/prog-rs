@@ -24,7 +24,7 @@ fn main() {
     {}
 
     // Progress while reading file
-    let f = File::open("/home/remi/data/addresses/bano.csv")
+    let f = File::open("../../data/addresses/bano.csv")
         .unwrap()
         .progress()
         .with_prefix("      Ends ...")

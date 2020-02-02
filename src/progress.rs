@@ -229,9 +229,7 @@ impl<'a> Default for Progress {
 
 /// A type that contains a progress bar that can be updated using `with_{parameter}` syntax.
 pub trait WithProgress: Sized {
-    fn update_progress<U>(self, update: U) -> Self
-    where
-        U: FnOnce(Progress) -> Progress;
+    fn get_progress(&mut self) -> &mut Progress;
 
     /// Specify a progress bar to use, which allows to copy configuration.
     ///
@@ -253,53 +251,44 @@ pub trait WithProgress: Sized {
     ///     do_something(i);
     /// }
     /// ```
-    fn with_progress(self, progress: Progress) -> Self {
-        self.update_progress(move |_| progress)
+    fn with_progress(mut self, progress: Progress) -> Self {
+        *self.get_progress() = progress;
+        self
     }
 
     /// Change the style of the bar disposition.
-    fn with_bar_position(self, bar_position: BarPosition) -> Self {
-        self.update_progress(move |mut p| {
-            p.config.bar_position = bar_position;
-            p
-        })
+    fn with_bar_position(mut self, bar_position: BarPosition) -> Self {
+        self.get_progress().config.bar_position = bar_position;
+        self
     }
 
     /// Change the width of the progress bar.
-    fn with_bar_width(self, bar_width: usize) -> Self {
-        self.update_progress(move |mut p| {
-            p.config.bar_width = bar_width;
-            p
-        })
+    fn with_bar_width(mut self, bar_width: usize) -> Self {
+        self.get_progress().config.bar_width = bar_width;
+        self
     }
 
     /// Change the width of the text the displayed informations should try to
     /// fit in. The terminal width will be detected by default.
-    fn with_display_width(self, display_width: usize) -> Self {
-        self.update_progress(move |mut p| {
-            p.config.display_width = Some(display_width);
-            p
-        })
+    fn with_display_width(mut self, display_width: usize) -> Self {
+        self.get_progress().config.display_width = Some(display_width);
+        self
     }
 
     /// Specify extra informations to display.
-    fn with_extra_infos<S>(self, extra_infos: S) -> Self
+    fn with_extra_infos<S>(mut self, extra_infos: S) -> Self
     where
         S: Into<String>,
     {
-        self.update_progress(move |mut p| {
-            p.config.extra_infos = extra_infos.into();
-            p
-        })
+        self.get_progress().config.extra_infos = extra_infos.into();
+        self
     }
 
     /// Change the output stream the progress bar is displayed in. By default
     /// standart output is used.
-    fn with_output_stream(self, output_stream: OutputStream) -> Self {
-        self.update_progress(move |mut p| {
-            p.config.output_stream = output_stream;
-            p
-        })
+    fn with_output_stream(mut self, output_stream: OutputStream) -> Self {
+        self.get_progress().config.output_stream = output_stream;
+        self
     }
 
     /// Change the text displayed in front of progress informations.
@@ -315,54 +304,41 @@ pub trait WithProgress: Sized {
     /// {
     ///     do_something(i);
     /// }
-    fn with_prefix<S>(self, prefix: S) -> Self
+    fn with_prefix<S>(mut self, prefix: S) -> Self
     where
         S: Into<String>,
     {
-        self.update_progress(move |mut p| {
-            p.config.prefix = prefix.into();
-            p
-        })
+        self.get_progress().config.prefix = prefix.into();
+        self
     }
 
     /// Change the minimum delay between two display updates.
-    fn with_refresh_delay(self, refresh_delay: Duration) -> Self {
-        self.update_progress(move |mut p| {
-            p.config.refresh_delay = refresh_delay;
-            p
-        })
+    fn with_refresh_delay(mut self, refresh_delay: Duration) -> Self {
+        self.get_progress().config.refresh_delay = refresh_delay;
+        self
     }
 
     /// Change the character used to draw the body of the progress bar.
-    fn with_shape_body(self, shape_body: char) -> Self {
-        self.update_progress(move |mut p| {
-            p.config.shape_body = shape_body;
-            p
-        })
+    fn with_shape_body(mut self, shape_body: char) -> Self {
+        self.get_progress().config.shape_body = shape_body;
+        self
     }
 
     /// Change the character used to draw the head of the progress bar.
-    fn with_shape_head(self, shape_head: char) -> Self {
-        self.update_progress(move |mut p| {
-            p.config.shape_head = shape_head;
-            p
-        })
+    fn with_shape_head(mut self, shape_head: char) -> Self {
+        self.get_progress().config.shape_head = shape_head;
+        self
     }
 
     /// Change the character used to draw the background of the progress bar.
-    fn with_shape_void(self, shape_void: char) -> Self {
-        self.update_progress(move |mut p| {
-            p.config.shape_void = shape_void;
-            p
-        })
+    fn with_shape_void(mut self, shape_void: char) -> Self {
+        self.get_progress().config.shape_void = shape_void;
+        self
     }
 }
 
 impl WithProgress for Progress {
-    fn update_progress<U>(self, update: U) -> Self
-    where
-        U: FnOnce(Progress) -> Progress,
-    {
-        update(self)
+    fn get_progress(&mut self) -> &mut Progress {
+        self
     }
 }

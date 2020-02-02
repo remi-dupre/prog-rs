@@ -68,12 +68,8 @@ impl<I, E> WithProgress for IterProgress<I, E>
 where
     I: Iterator<Item = E>,
 {
-    fn update_progress<U>(mut self, update: U) -> Self
-    where
-        U: FnOnce(Progress) -> Progress,
-    {
-        self.step_progress = self.step_progress.update_progress(update);
-        self
+    fn get_progress(&mut self) -> &mut Progress {
+        self.step_progress.get_progress()
     }
 }
 

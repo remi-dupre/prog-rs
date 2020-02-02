@@ -137,11 +137,7 @@ impl Default for StepProgress {
 }
 
 impl WithProgress for StepProgress {
-    fn update_progress<U>(mut self, update: U) -> Self
-    where
-        U: FnOnce(Progress) -> Progress,
-    {
-        self.progress = update(self.progress);
-        self
+    fn get_progress(&mut self) -> &mut Progress {
+        &mut self.progress
     }
 }
