@@ -2,6 +2,9 @@ prog-rs
 =======
 
 ![licence](https://img.shields.io/github/license/remi-dupre/prog-rs)
+[![crate](https://img.shields.io/crates/v/prog_rs.svg)](https://crates.io/crates/prog_rs)
+[![documentation](https://docs.rs/prog_rs/badge.svg)](https://docs.rs/prog_rs)
+
 
 A Rust library to help easily build a progress bar.
 
