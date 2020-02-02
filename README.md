@@ -56,3 +56,17 @@ fn main() {
     }
 }
 ```
+
+This same behaviour is also implemented for files:
+
+```rust
+use prog_rs::prelude::*;
+
+let f = File::open("../../data/addresses/bano.csv")
+    .unwrap()
+    .progress()
+    .with_prefix(" Read file ...")
+    .with_bar_position(BarPosition::Right);
+let f = BufReader::new(f);
+println!("This file has {} lines", f.lines().count());
+```
