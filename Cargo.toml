@@ -8,7 +8,7 @@ licence = "Apache-2.0"
 license-file = "LICENSE"
 readme = "README.md"
 keywords = ["iterator", "debug", "ui", "terminal", "progress"]
-categories = ["development-tools::debugging", "rust-patterns"]
+categories = ["command-line-interface", "rust-patterns"]
 edition = "2018"
 
 [dependencies]
