@@ -1,5 +1,8 @@
 extern crate prog_rs;
 
+use std::fs::File;
+use std::io::prelude::*;
+use std::io::BufReader;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -20,11 +23,14 @@ fn main() {
         .with_bar_position(BarPosition::Right)
     {}
 
-    for _ in (0..100_000_000)
+    // Progress while reading file
+    let f = File::open("/home/remi/data/addresses/bano.csv")
+        .unwrap()
         .progress()
         .with_prefix("      Ends ...")
-        .with_bar_position(BarPosition::Right)
-    {}
+        .with_bar_position(BarPosition::Right);
+    let f = BufReader::new(f);
+    println!("This file has {} lines", f.lines().count());
 
     let mut progress = Progress::new()
         .with_bar_width(30)
@@ -34,8 +40,7 @@ fn main() {
 
     for i in 0..10_000 {
         progress.update(i as f32 / 10_000.).unwrap();
-        progress = progress
-            .with_extra_infos(format!("Hello, World! ({}/10000)", i + 1));
+        progress = progress.with_extra_infos(format!("Hello, World! ({}/10000)", i + 1));
         sleep(Duration::from_nanos(110));
     }
 

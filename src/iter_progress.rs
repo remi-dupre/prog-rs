@@ -40,31 +40,6 @@ where
             step_progress: StepProgress::new().with_max_step(max_step),
         }
     }
-
-    /// Specify a progress bar to use, which allows to copy configuration.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use prog_rs::prelude::*;
-    /// use prog_rs::{OutputStream, Progress};
-    ///
-    /// let progress = Progress::new()
-    ///     .with_bar_width(50)
-    ///     .with_output_stream(OutputStream::StdErr);
-    ///
-    /// for i in (0..100).progress().with_progress(progress.clone()) {
-    ///     do_something(i);
-    /// }
-    ///
-    /// for i in (0..100).progress().with_progress(progress) {
-    ///     do_something(i);
-    /// }
-    /// ```
-    pub fn with_progress(mut self, progress: Progress) -> Self {
-        self.step_progress = self.step_progress.with_progress(progress);
-        self
-    }
 }
 
 impl<I, E> Iterator for IterProgress<I, E>

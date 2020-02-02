@@ -81,9 +81,13 @@ extern crate term_size;
 
 mod utils;
 
+pub mod file_progress;
 pub mod iter_progress;
 pub mod prelude;
 pub mod progress;
 pub mod step_progress;
 
-pub use progress::{BarPosition, OutputStream, Progress};
+pub use file_progress::FileProgress;
+pub use iter_progress::IterProgress;
+pub use progress::{BarPosition, OutputStream, Progress, WithProgress};
+pub use step_progress::StepProgress;

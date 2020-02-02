@@ -31,9 +31,9 @@ impl StepProgress {
         }
     }
 
-    /// Specify a progress bar to use, which allows to copy configuration.
-    pub fn with_progress(mut self, progress: Progress) -> Self {
-        self.progress = progress;
+    /// Change displayed unit.
+    pub fn with_unit<S: Into<String>>(mut self, unit: S) -> Self {
+        self.unit = unit.into();
         self
     }
 
@@ -70,7 +70,7 @@ impl StepProgress {
         self.cur_step as f32 / self.time_start.elapsed().as_secs_f32()
     }
 
-    // TODO: documentation
+    /// Make progress for `count` iterations and redraw if necessary.
     pub fn step(&mut self, count: usize) {
         self.cur_step += count;
 
@@ -79,7 +79,7 @@ impl StepProgress {
         }
     }
 
-    // TODO: documentation
+    /// End iterations and redraw.
     pub fn finish(&mut self) {
         self.draw(true);
     }
