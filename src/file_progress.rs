@@ -1,10 +1,26 @@
-use crate::progress::{Progress, WithProgress};
-use crate::step_progress::StepProgress;
+//! Defines a wrapper around files to display a progress bar.
+
+use crate::step_progress::{StepProgress, WithStepProgress};
 
 use std::convert::TryInto;
 use std::fs::File;
 use std::io;
 
+/// A wrapper read only stream arround a file.
+///
+/// # Example
+///
+/// ```
+/// use prog_rs::prelude::*;
+///
+/// let f = File::open("../../data/addresses/bano.csv")
+///     .unwrap()
+///     .progress()
+///     .with_prefix(" Read file ...")
+///     .with_bar_position(BarPosition::Right);
+/// let f = BufReader::new(f);
+/// println!("This file has {} lines", f.lines().count());
+/// ```
 #[derive(Debug)]
 pub struct FileProgress {
     inner: File,
@@ -61,9 +77,9 @@ impl io::Read for FileProgress {
     }
 }
 
-impl WithProgress for FileProgress {
-    fn get_progress(&mut self) -> &mut Progress {
-        self.step_progress.get_progress()
+impl WithStepProgress for FileProgress {
+    fn get_step_progress(&mut self) -> &mut StepProgress {
+        &mut self.step_progress
     }
 }
 

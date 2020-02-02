@@ -1,24 +1,23 @@
-//! Defines a wrapper arroud iterators to display a progress bar.
-//!
-//! # Example
-//!
-//! ```
-//! use prog_rs::prelude::*;
-//!
-//! for _ in (0..1_000)
-//!     .progress()
-//!     .with_prefix("Processing...")
-//!     .with_output_stream(prog_rs::OutputStream::StdErr)
-//!     .with_bar_position(prog_rs::BarPosition::Right)
-//! {
-//!     do_something();
-//! }
-//! ```
+//! Defines a wrapper around iterators to display a progress bar.
 
-use crate::progress::{Progress, WithProgress};
-use crate::step_progress::StepProgress;
+use crate::step_progress::{StepProgress, WithStepProgress};
 
 /// A wrapper iterator arround another iterator which adds a progress bar.
+///
+/// # Example
+///
+/// ```
+/// use prog_rs::prelude::*;
+///
+/// for _ in (0..1_000)
+///     .progress()
+///     .with_prefix("Processing...")
+///     .with_output_stream(prog_rs::OutputStream::StdErr)
+///     .with_bar_position(prog_rs::BarPosition::Right)
+/// {
+///     do_something();
+/// }
+/// ```
 #[derive(Clone, Debug)]
 pub struct IterProgress<I, E>
 where
@@ -54,8 +53,8 @@ where
         match item {
             None => self.step_progress.finish(),
             Some(_) => {
-                self.step_progress
-                    .set_max_step(self.step_progress.cur_step() + self.inner.size_hint().0 + 1);
+                let new_max_step = self.step_progress.cur_step() + self.inner.size_hint().0 + 1;
+                self.step_progress.set_max_step(new_max_step);
                 self.step_progress.step(1)
             }
         }
@@ -64,12 +63,12 @@ where
     }
 }
 
-impl<I, E> WithProgress for IterProgress<I, E>
+impl<I, E> WithStepProgress for IterProgress<I, E>
 where
     I: Iterator<Item = E>,
 {
-    fn get_progress(&mut self) -> &mut Progress {
-        self.step_progress.get_progress()
+    fn get_step_progress(&mut self) -> &mut StepProgress {
+        &mut self.step_progress
     }
 }
 

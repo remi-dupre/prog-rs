@@ -57,6 +57,19 @@
 //! progress.finished().ok();
 //! ```
 //!
+//! This same behaviour is also implemented for files:
+//! ```
+//! use prog_rs::prelude::*;
+//!
+//! let f = File::open("../../data/addresses/bano.csv")
+//!     .unwrap()
+//!     .progress()
+//!     .with_prefix(" Read file ...")
+//!     .with_bar_position(BarPosition::Right);
+//! let f = BufReader::new(f);
+//! println!("This file has {} lines", f.lines().count());
+//! ```
+//!
 //!
 //! Performances
 //! ------------
@@ -87,7 +100,7 @@ pub mod prelude;
 pub mod progress;
 pub mod step_progress;
 
-pub use file_progress::FileProgress;
-pub use iter_progress::IterProgress;
-pub use progress::{BarPosition, OutputStream, Progress, WithProgress};
-pub use step_progress::StepProgress;
+pub use file_progress::*;
+pub use iter_progress::*;
+pub use progress::*;
+pub use step_progress::*;

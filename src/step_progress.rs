@@ -33,39 +33,6 @@ impl StepProgress {
         }
     }
 
-    /// Change wether units are converted to human-readable units.
-    pub fn with_humanize(mut self, humanize: bool) -> Self {
-        self.humanize = humanize;
-        self
-    }
-
-    /// Change displayed unit.
-    pub fn with_unit<S: Into<String>>(mut self, unit: S) -> Self {
-        self.unit = unit.into();
-        self
-    }
-
-    /// Update expected max step.
-    pub fn with_max_step(mut self, max_step: usize) -> Self {
-        self.max_step = Some(max_step);
-        self
-    }
-
-    /// Update expected max step.
-    pub fn set_max_step(&mut self, max_step: usize) {
-        self.max_step = Some(max_step)
-    }
-
-    /// Get expected max step.
-    pub fn max_step(&self) -> Option<usize> {
-        self.max_step
-    }
-
-    /// Get current step.
-    pub fn cur_step(&self) -> usize {
-        self.cur_step
-    }
-
     /// Compute the current average speed of iterations.
     pub fn speed(&self) -> f32 {
         let (old_time, old_iter) = *self.time_history.front().unwrap();
@@ -175,8 +142,70 @@ impl Default for StepProgress {
     }
 }
 
-impl WithProgress for StepProgress {
+// __        ___ _   _
+// \ \      / (_) |_| |__
+//  \ \ /\ / /| | __| '_ \
+//   \ V  V / | | |_| | | |
+//    \_/\_/  |_|\__|_| |_|
+//
+//  ____  _             ____
+// / ___|| |_ ___ _ __ |  _ \ _ __ ___   __ _ _ __ ___  ___ ___
+// \___ \| __/ _ \ '_ \| |_) | '__/ _ \ / _` | '__/ _ \/ __/ __|
+//  ___) | ||  __/ |_) |  __/| | | (_) | (_| | | |  __/\__ \__ \
+// |____/ \__\___| .__/|_|   |_|  \___/ \__, |_|  \___||___/___/
+//               |_|                    |___/
+
+/// A type that contains a progress bar that can only step forward.
+///
+/// Note that this trait auto-implements WithProgress.
+pub trait WithStepProgress: Sized {
+    fn get_step_progress(&mut self) -> &mut StepProgress;
+
+    /// Change wether units are converted to human-readable units.
+    fn with_humanize(mut self, humanize: bool) -> Self {
+        self.get_step_progress().humanize = humanize;
+        self
+    }
+
+    /// Change displayed unit.
+    fn with_unit<S: Into<String>>(mut self, unit: S) -> Self {
+        self.get_step_progress().unit = unit.into();
+        self
+    }
+
+    /// Update expected max step.
+    fn with_max_step(mut self, max_step: usize) -> Self {
+        self.get_step_progress().max_step = Some(max_step);
+        self
+    }
+
+    /// Update expected max step.
+    fn set_max_step(&mut self, max_step: usize) {
+        self.get_step_progress().max_step = Some(max_step)
+    }
+
+    /// Get expected max step.
+    fn max_step(&mut self) -> Option<usize> {
+        self.get_step_progress().max_step
+    }
+
+    /// Get current step.
+    fn cur_step(&mut self) -> usize {
+        self.get_step_progress().cur_step
+    }
+}
+
+impl WithStepProgress for StepProgress {
+    fn get_step_progress(&mut self) -> &mut StepProgress {
+        self
+    }
+}
+
+impl<T> WithProgress for T
+where
+    T: Sized + WithStepProgress,
+{
     fn get_progress(&mut self) -> &mut Progress {
-        &mut self.progress
+        &mut self.get_step_progress().progress
     }
 }

@@ -227,6 +227,13 @@ impl<'a> Default for Progress {
     }
 }
 
+// __        ___ _   _       ____
+// \ \      / (_) |_| |__   |  _ \ _ __ ___   __ _ _ __ ___  ___ ___
+//  \ \ /\ / /| | __| '_ \  | |_) | '__/ _ \ / _` | '__/ _ \/ __/ __|
+//   \ V  V / | | |_| | | | |  __/| | | (_) | (_| | | |  __/\__ \__ \
+//    \_/\_/  |_|\__|_| |_| |_|   |_|  \___/ \__, |_|  \___||___/___/
+//                                           |___/
+
 /// A type that contains a progress bar that can be updated using `with_{parameter}` syntax.
 pub trait WithProgress: Sized {
     fn get_progress(&mut self) -> &mut Progress;
