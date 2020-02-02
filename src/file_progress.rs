@@ -18,6 +18,7 @@ impl FileProgress {
         Self {
             inner,
             step_progress: StepProgress::new()
+                .with_humanize(true)
                 .with_unit("B")
                 .with_max_step(max_step.try_into().expect("file size doesn't fit in usize")),
         }

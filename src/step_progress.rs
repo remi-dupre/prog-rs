@@ -12,6 +12,7 @@ use crate::utils::convert_to_unit;
 #[derive(Clone, Debug)]
 pub struct StepProgress {
     cur_step: usize,
+    humanize: bool,
     max_step: Option<usize>,
     progress: Progress,
     time_start: Instant,
@@ -23,12 +24,19 @@ impl StepProgress {
     pub fn new() -> Self {
         Self {
             cur_step: 0,
+            humanize: false,
             max_step: None,
             progress: Progress::new(),
             time_start: Instant::now(),
             time_history: vec![(Instant::now(), 0)].into(),
-            unit: "i".to_string(),
+            unit: String::new(),
         }
+    }
+
+    /// Change wether units are converted to human-readable units.
+    pub fn with_humanize(mut self, humanize: bool) -> Self {
+        self.humanize = humanize;
+        self
     }
 
     /// Change displayed unit.
@@ -89,6 +97,7 @@ impl StepProgress {
             .push_back((Instant::now(), self.cur_step + 1));
 
         let nb_steps = self.max_step.unwrap_or(self.cur_step);
+
         let duration = {
             if finished {
                 self.time_start.elapsed()
@@ -99,6 +108,8 @@ impl StepProgress {
                 )
             }
         };
+
+        // Compute speed
         let speed = {
             if finished {
                 self.total_speed()
@@ -106,11 +117,39 @@ impl StepProgress {
                 self.speed()
             }
         };
+
         let (speed, unit_prefix) = convert_to_unit(speed);
 
+        // Compute current state with unit
+        let displayed_precision = if self.humanize { 2 } else { 0 };
+
+        let (displayed_cur, displayed_cur_unit) = {
+            if self.humanize {
+                convert_to_unit(self.cur_step as f32)
+            } else {
+                (self.cur_step as f32, "")
+            }
+        };
+
+        let (displayed_max, displayed_max_unit) = {
+            if self.humanize {
+                convert_to_unit(nb_steps as f32)
+            } else {
+                (nb_steps as f32, "")
+            }
+        };
+
         self.progress.set_extra_infos(format!(
-            "{}/{}, {:.1?} ({:.1} {}{}/s) ",
-            self.cur_step, nb_steps, duration, speed, unit_prefix, self.unit
+            "{:.precision$}{}{unit}/{:>.precision$}{}{unit}, {:.1?} ({:.1} {}{unit}/s) ",
+            displayed_cur,
+            displayed_cur_unit,
+            displayed_max,
+            displayed_max_unit,
+            duration,
+            speed,
+            unit_prefix,
+            precision = displayed_precision,
+            unit = self.unit
         ));
 
         if finished {
