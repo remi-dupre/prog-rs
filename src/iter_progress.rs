@@ -20,7 +20,7 @@ const HISTORY_DURATION: u64 = 10_000; // in milliseconds
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
 
-use crate::progress::{BarPosition, OutputStream, Progress};
+use crate::progress::{Progress, WithProgress};
 use crate::utils::convert_to_unit;
 
 /// A wrapper iterator arround another iterator which adds a progress bar.
@@ -37,7 +37,7 @@ where
     time_history: VecDeque<(Instant, usize)>,
 }
 
-impl<'a, I, E> IterProgress<I, E>
+impl<I, E> IterProgress<I, E>
 where
     I: Iterator<Item = E>,
 {
@@ -77,106 +77,6 @@ where
         self
     }
 
-    /// Specify the expected size of inner iterator.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use prog_rs::prelude::*;
-    ///
-    /// for i in (0..10)
-    ///     .filter(|x| x % 2 == 0) // `size_hint` wouldn't be relevant
-    ///     .progress()
-    ///     .with_iter_size(5)
-    /// {
-    ///     do_something(i);
-    /// }
-    /// ```
-    pub fn with_iter_size(mut self, iter_size: usize) -> Self {
-        self.iter_size = Some(iter_size);
-        self
-    }
-
-    /// Change the style of the bar disposition.
-    pub fn with_bar_position(mut self, bar_position: BarPosition) -> Self {
-        self.progress = self.progress.with_bar_position(bar_position);
-        self
-    }
-
-    /// Change the width of the progress bar.
-    pub fn with_bar_width(mut self, bar_width: usize) -> Self {
-        self.progress = self.progress.with_bar_width(bar_width);
-        self
-    }
-
-    /// Change the width of the text the displayed informations should try to
-    /// fit in. The terminal width will be detected by default.
-    pub fn with_display_width(mut self, display_width: usize) -> Self {
-        self.progress = self.progress.with_display_width(display_width);
-        self
-    }
-
-    /// Specify extra informations to display.
-    pub fn with_extra_infos<S>(mut self, extra_infos: S) -> Self
-    where
-        S: Into<String>,
-    {
-        self.progress = self.progress.with_extra_infos(extra_infos);
-        self
-    }
-
-    /// Change the output stream the progress bar is displayed in. By default
-    /// standart output is used.
-    pub fn with_output_stream(mut self, output_stream: OutputStream) -> Self {
-        self.progress = self.progress.with_output_stream(output_stream);
-        self
-    }
-
-    /// Change the text displayed in front of progress informations.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use prog_rs::prelude::*;
-    ///
-    /// for i in (0..1000)
-    ///     .progress()
-    ///     .with_prefix("Computing something ...")
-    /// {
-    ///     do_something(i);
-    /// }
-    pub fn with_prefix<S>(mut self, prefix: S) -> Self
-    where
-        S: Into<String>,
-    {
-        self.progress = self.progress.with_prefix(prefix);
-        self
-    }
-
-    /// Change the minimum delay between two display updates.
-    pub fn with_refresh_delay(mut self, refresh_delay: Duration) -> Self {
-        self.progress = self.progress.with_refresh_delay(refresh_delay);
-        self
-    }
-
-    /// Change the character used to draw the body of the progress bar.
-    pub fn with_shape_body(mut self, shape_body: char) -> Self {
-        self.progress = self.progress.with_shape_body(shape_body);
-        self
-    }
-
-    /// Change the character used to draw the head of the progress bar.
-    pub fn with_shape_head(mut self, shape_head: char) -> Self {
-        self.progress = self.progress.with_shape_head(shape_head);
-        self
-    }
-
-    /// Change the character used to draw the background of the progress bar.
-    pub fn with_shape_void(mut self, shape_void: char) -> Self {
-        self.progress = self.progress.with_shape_void(shape_void);
-        self
-    }
-
     /// Compute the current average speed of iterations.
     pub fn speed(&self) -> f32 {
         let (old_time, old_iter) = *self.time_history.front().unwrap();
@@ -190,7 +90,7 @@ where
     }
 }
 
-impl<'a, I, E> Iterator for IterProgress<I, E>
+impl<I, E> Iterator for IterProgress<I, E>
 where
     I: Iterator<Item = E>,
 {
@@ -239,6 +139,19 @@ where
 
         self.iter_count += 1;
         ret
+    }
+}
+
+impl<I, E> WithProgress for IterProgress<I, E>
+where
+    I: Iterator<Item = E>,
+{
+    fn update_progress<U>(mut self, update: U) -> Self
+    where
+        U: FnOnce(Progress) -> Progress,
+    {
+        self.progress = update(self.progress);
+        self
     }
 }
 
