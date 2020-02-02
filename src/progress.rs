@@ -108,19 +108,13 @@ pub struct Progress {
     last_update_time: Option<Instant>,
 }
 
-impl<'a> Default for Progress {
-    fn default() -> Self {
+impl<'a> Progress {
+    /// Create a new progress bar with default display settings.
+    pub fn new() -> Self {
         Self {
             config: ProgressConfig::default(),
             last_update_time: None,
         }
-    }
-}
-
-impl<'a> Progress {
-    /// Create a new progress bar with default display settings.
-    pub fn new() -> Self {
-        Self::default()
     }
 
     /// Update extra informations displayed next to the progress bar.
@@ -224,6 +218,12 @@ impl<'a> Progress {
         self.last_update_time = None;
         self.update(1.0)?;
         writeln!(&mut self.config.output_stream.get())
+    }
+}
+
+impl<'a> Default for Progress {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
